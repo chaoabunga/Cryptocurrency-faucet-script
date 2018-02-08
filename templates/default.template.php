@@ -1,18 +1,21 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    
+
 	<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 	<meta name="author" content="Cryptocurrency faucet script" />
-	
+
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
     <!-- Default CSS -->
     <link rel="stylesheet" href="./css/default.css" type="text/css" />
-    
+
     <!-- Bootstrap CDN Minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <!-- chat box -->
+<script id="cid0020000174727755736" data-cfasync="false" async src="//st.chatango.com/js/gz/emb.js" style="width: 232px;height: 383px;">{"handle":"socialsendfaucet","arch":"js","styles":{"a":"0084EF","b":100,"c":"FFFFFF","d":"FFFFFF","k":"0084EF","l":"0084EF","m":"0084EF","n":"FFFFFF","p":"10","q":"0084EF","r":100,"pos":"bl","cv":1,"cvbg":"0084EF","cvw":200,"cvh":30,"cnrs":"0.35","ticker":1,"fwtickm":1}}</script>
     <!-- Bootstrap CDN Minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    
+
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -22,10 +25,10 @@
     {{HEAD}}
 
 	<title>{{TITLE}}</title>
-    
+
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://code.jquery.com/jquery.js"></script>
-    
+
     <!-- Recaptcha theme -->
      <script type="text/javascript">
         var RecaptchaOptions = {
@@ -44,6 +47,18 @@
     <div class="panel-heading">
         <h3 class="panel-title">Advertisements</h3>
     </div>
+	<?php
+	  $banner1 = '<a target="_blank" href="https://freebitco.in/?r=259805"><img src="https://static1.freebitco.in/banners/468x60-3.png"></a>';
+	  $banner2 = '<a target="_blank" href="https://wallet.crypto-bridge.org/?r=chaoabunga"><img src="banners/crypto-bridge.jpg"></a>';
+	  $banner3 = '<a target="_blank" href="https://www.kucoin.com/#/?r=1txgy"><img src="banners/kucoin.png"></a>';
+	  $banner4 = '<a target="_blank" href="https://www.cryptopia.co.nz/Register?referrer=chaoabunga"><img src="banners/cryptopia.png"></a>';
+	  $banners = array($banner1, $banner2, $banner3, $banner4);
+	  shuffle($banners);
+	?>
+	<div class="panel-body">
+  	<?php print $banners[0] ?>
+	</div>
+
     <div class="panel-body">
         {{ADS}}
     </div>
@@ -53,19 +68,17 @@
         <h3 class="panel-title">Faucet stats</h3>
     </div>
     <div class="panel-body">
-        <span>Balance:</span> 
-        <span class="highlight">{{BALANCE}}</span> {{COINNAME}}<br/>
-        Already paid: <span class="highlight" >{{TOTAL_PAYOUT}}</span> with <span class="highlight" >{{NUMBER_OF_PAYOUTS}}</span> payouts<br/><br/>
-      
+        Already paid: <span class="highlight" >{{TOTAL_PAYOUT}}</span> with <span class="highlight" >{{TOTAL_PROMO_PAYOUTS}}</span> promo on <span class="highlight" >{{NUMBER_OF_PAYOUTS}}</span> payouts.</span><br/><br/>
+
         How many payments are currently staged: <span class="highlight" >{{STAGED_PAYMENT_COUNT}}</span> payments.<br/>
-      
+
         How many payments are left before they are executed: <span class="highlight" >{{STAGED_PAYMENTS_LEFT}}</span> payments.<br/>
-      
-        Payments will be done after <span class="highlight" >{{STAGED_PAYMENT_THRESHOLD}}</span> staged payments or automated hourly.<br/><br/>
-        You can get free {{COINNAME}} every hour.
+
+        Payments will be done after <span class="highlight" >{{STAGED_PAYMENT_THRESHOLD}}</span> staged payments.<br/><br/>
+        You can get free {{COINNAME}} every <b>Two Hours</b>.
   </div>
 </div>
-            
+
 <div class="panel panel-default">
     <div class="panel-heading">
         <h3 class="panel-title">Please donate to keep this faucet running</h3>
@@ -75,7 +88,7 @@
     </div>
 </div>
 
-    <?php 
+    <?php
         switch ($this->status())
         {
             case SF_STATUS_FAUCET_INCOMPLETE:
@@ -180,7 +193,7 @@
             case SF_STATUS_INVALID_DOGE_ADDRESS:
             case SF_STATUS_OPERATIONAL:
 	?>
-    
+
     <form method="post" action="">
         <div class="input-group input-group-sm">
             <span class="input-group-addon">{{COINNAME}} address</span>
@@ -193,7 +206,7 @@
         <div class="margintop" id="captcha">{{CAPTCHA}}</div>
         <input id="send" name="dogecoin_submit" type="submit" class="btn btn-warning btn-md margintop" value="Send {{COINNAME}}" />
     </form>
-    
+
 	<?php
         if ($this->status() == SF_STATUS_INVALID_DOGE_ADDRESS)
         {
@@ -224,8 +237,8 @@
     break;
     }
     ?>
-                                         
+
 </div>
-    
+
 </body>
 </html>
