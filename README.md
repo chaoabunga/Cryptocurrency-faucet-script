@@ -4,6 +4,7 @@ Cryptocurrency-faucet-script
 
 - Displays Total promo payouts
 - A section for rotating banners
+- Sample config file for Social Send.
 
 ============================
 * A big THANK YOU goes to a friend who provided the script and requested to not be named.
