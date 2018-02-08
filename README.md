@@ -1,6 +1,6 @@
 Cryptocurrency-faucet-script
 ============================
-2-8-18: Added by Chao
+Added by Chao:
 
 - Displays Total promo payouts
 - A section for rotating banners
