@@ -41,7 +41,7 @@ class simple_faucet
 			}
 		$defaults = array(
 			"minimum_payout" => 0.01,
-			"maximum_payout" => 10,
+			"maximum_payout" => 0.1,
 			"payout_threshold" => 250,
 			"payout_interval" => "7h",
 			"user_check" => "both",
@@ -51,12 +51,12 @@ class simple_faucet
 			"captcha_config" => array(),
 			"use_promo_codes" => true,
 			"mysql_table_prefix" => "sf_",
-			"donation_address" => "DTiUqjQTXwgZfvcTcdoabp7uLezK47TPkN ",
-			"title" => "DOGE Faucet",
+			"donation_address" => "Cd7dPp1vC9L5fWtC1WtGpmXbjSpwgAyaq7",
+			"title" => "CHC Faucet",
 			"template" => "default",
 			"stage_payments" => false,
 			"stage_payment_account_name" => "account",
-			"staged_payment_threshold" => 15,
+			"staged_payment_threshold" => 25,
 			"staged_payment_cron_only" => false,
 			"filter_proxies" => false,
 			"proxy_filter_use_faucet_database" => false
@@ -293,6 +293,9 @@ class simple_faucet
 				case "promo_payout_amount":
 					return $promo_payout_amount;
 
+				case "total_promo_payouts":
+					return $self->payout_aggregate("PROMO");
+
 				// CAPTCHA:
 
 				case "captcha":
@@ -333,9 +336,17 @@ class simple_faucet
 	public function payout_aggregate($function = "AVG")
 		{
 		//if ($this->db->ping())
+			$get_amount = "payout_amount";
+			if ($function == "PROMO")
+			{
+				$get_amount = "promo_payout_amount";
+				$function = "SUM";
+			}
+
+
 		if ($this->status != SF_STATUS_MYSQL_CONNECTION_FAILED)
 			{
-			if ($result = $this->db->query("SELECT ".$this->db->escape_string($function)."(`payout_amount`) FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."payouts`"))
+			if ($result = $this->db->query("SELECT ".$this->db->escape_string($function)."(`".$get_amount."`) FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."payouts`"))
 				{
 				$row = $result->fetch_array(MYSQLI_NUM);
 				return is_float($row[0]) ? number_format($row[0],6) : $row[0];
