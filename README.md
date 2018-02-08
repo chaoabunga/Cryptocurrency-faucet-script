@@ -4,7 +4,7 @@ Added by Chao:
 
 - Displays Total promo payouts
 - A section for rotating banners
-- Sample config file for Chainconi and Social Send.
+- Sample config file for Chaincoin and Social Send.
 
 ============================
 * A big THANK YOU goes to a friend who provided the script and requested to not be named.
