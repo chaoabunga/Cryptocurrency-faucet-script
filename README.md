@@ -1,5 +1,10 @@
 Cryptocurrency-faucet-script
 ============================
+2-8-18: Added by Chao
+-Displays Total promo payouts
+-A section for rotating banners
+
+============================
 * A big THANK YOU goes to a friend who provided the script and requested to not be named.
 
 Faucet features:
