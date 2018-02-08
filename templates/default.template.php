@@ -237,7 +237,14 @@
     break;
     }
     ?>
-
+    <div class="panel panel-default">
+        <div class="panel-heading">
+               <h3 class="panel-title">Source</h3>
+        </div>
+        <div class="panel-body">
+        <a href="https://github.com/chaoabunga/faucet/">Github</a>
+        </div>
+    <div>
 </div>
 
 </body>
