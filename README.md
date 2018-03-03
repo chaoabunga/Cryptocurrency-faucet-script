@@ -2,8 +2,12 @@ Cryptocurrency-faucet-script
 ============================
 Added by Chao:
 
-- Displays Total promo payouts
-- A section for rotating banners
+Last updated 3/3/2018
+- Live coin price update with exchange api
+- Payouts based on USD value, so changes accordingly.
+- Operator fee added.
+- Template include chatango and twitter feed.
+- Displays Total promo payouts.
 - Sample config file for Chaincoin and Social Send.
 
 ============================
