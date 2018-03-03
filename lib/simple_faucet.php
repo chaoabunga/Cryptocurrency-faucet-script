@@ -15,6 +15,8 @@ class simple_faucet
 	protected $promo_payout_amount = 0;
 
 	protected $balance = 0;
+	protected $usd_value = 0;
+	protected $btc_value = 0;
 
 	protected $header = '';
 
@@ -31,7 +33,7 @@ class simple_faucet
 			define("SF_STATUS_RPC_CONNECTION_FAILED",200);
 			define("SF_STATUS_MYSQL_CONNECTION_FAILED",201);
 			define("SF_STATUS_PAYOUT_DENIED",202);
-			define("SF_STATUS_INVALID_DOGE_ADDRESS",203);
+			define("SF_STATUS_INVALID_CHAIN_ADDRESS",203);
 			define("SF_STATUS_PAYOUT_ERROR",204);
 			define("SF_STATUS_CAPTCHA_INCORRECT",205);
 			define("SF_STATUS_DRY_FAUCET",206);
@@ -51,19 +53,24 @@ class simple_faucet
 			"captcha_config" => array(),
 			"use_promo_codes" => true,
 			"mysql_table_prefix" => "sf_",
-			"donation_address" => "Cd7dPp1vC9L5fWtC1WtGpmXbjSpwgAyaq7",
-			"title" => "CHC Faucet",
+			"donation_address" => "",
+			"operator_address" => "",
+			"operator_fee" => "10",
+			"coin_api" => "",
+			"btc_api" => "",
+			"title" => "SEND Faucet",
 			"template" => "default",
 			"stage_payments" => false,
 			"stage_payment_account_name" => "account",
 			"staged_payment_threshold" => 25,
 			"staged_payment_cron_only" => false,
 			"filter_proxies" => false,
+			"sum_staged_payments" => 0,
 			"proxy_filter_use_faucet_database" => false
 
 			);
 		$this->config = array_merge($defaults,$config);
-		if ($this->config["user_check"] != "ip_address" && $this->config["user_check"] != "doge_address")
+		if ($this->config["user_check"] != "ip_address" && $this->config["user_check"] != "chain_address")
 			$this->config["user_check"] = "both";
 
 		if ($this->config["captcha"] == "recaptcha")
@@ -71,21 +78,39 @@ class simple_faucet
 		elseif ($this->config["captcha"] == "recaptcha2")
 			require_once('./lib/recaptchalib2.php');
 
+		$content1 = file_get_contents($config["coin_api"]);
+		$content2 = file_get_contents($config["btc_api"]);
+		$data1=json_decode($content1, true);
+		$data2=json_decode($content2, true);
+		$this->btc_value = number_format($data1['Data']['LastPrice'],8);
+		$btcusd = $data2['last'];
+		$this->usd_value = number_format(($this->btc_value * $btcusd), 2);
+
 		if (isset($config["rpc_user"],$config["rpc_password"],$config["rpc_host"],$config["rpc_port"],$config["mysql_user"],$config["mysql_password"],$config["mysql_host"],$config["mysql_database"]))
 			{
 			if (class_exists("jsonRPCClient"))
 				{
 				$this->rpc_client = new jsonRPCClient('http://'.urlencode($config["rpc_user"]).':'.urlencode($config["rpc_password"]).'@'.urlencode($config["rpc_host"]).':'.urlencode($config["rpc_port"]));
-				
+
 				$this->db = @new mysqli($config["mysql_host"],$config["mysql_user"],$config["mysql_password"],$config["mysql_database"]);
 				//if (!$this->db->connect_error)
+
 				if (!mysqli_connect_error() && !is_null($this->balance = $this->rpc("getbalance"))) // compatibility with older PHP versions
 					{
-					if ($this->balance >= $this->config["payout_threshold"])
+
+					if ($result = $this->db->query("SELECT SUM(`payout_amount`) FROM `".$this->db->escape_string($config["mysql_table_prefix"])."staged_payments`"))
+						{
+						$row = $result->fetch_array(MYSQLI_NUM);
+						$this->sum_staged_payments = $row[0];
+						}
+
+					$this->balance = $this->balance - $this->config["payout_threshold"];
+					//if ($this->balance >= ($this->$sum_staged_payments + $this->payout_threshold))
+					if ($this->balance >= $this->sum_staged_payments)
 						{
 						$this->status = SF_STATUS_OPERATIONAL;
 
-						if (isset($_POST["dogecoin_address"]) && (($this->config["use_captcha"] && $this->valid_captcha()) || !$this->config["use_captcha"]))
+						if (isset($_POST["chaincoin_address"]) && (($this->config["use_captcha"] && $this->valid_captcha()) || !$this->config["use_captcha"]))
 							{
 							if ($this->config["filter_proxies"] && class_exists("proxy_filter"))
 								{
@@ -97,8 +122,8 @@ class simple_faucet
 									}
 								}
 
-							$dogecoin_address = $_POST["dogecoin_address"];
-							$validation = $this->rpc("validateaddress",array($dogecoin_address));
+							$chaincoin_address = $_POST["chaincoin_address"];
+							$validation = $this->rpc("validateaddress",array($chaincoin_address));
 							if ($validation["isvalid"])
 								{
 								$interval = "7 HOUR"; // hardcoded default interval if the custom interval is messed up
@@ -123,8 +148,8 @@ class simple_faucet
 								$user_check = " AND (";
 								if ($this->config["user_check"] == "ip_address" || $this->config["user_check"] == "both")
 									$user_check .= " `ip_address` = '".$this->db->escape_string($_SERVER["REMOTE_ADDR"])."'";
-								if ($this->config["user_check"] == "doge_address" || $this->config["user_check"] == "both")
-									$user_check .= ($this->config["user_check"] == "both"?" OR":"")." `payout_address` = '".$this->db->escape_string($dogecoin_address)."'";
+								if ($this->config["user_check"] == "chain_address" || $this->config["user_check"] == "both")
+									$user_check .= ($this->config["user_check"] == "both"?" OR":"")." `payout_address` = '".$this->db->escape_string($chaincoin_address)."'";
 								$user_check .= ")";
 								$result = $this->db->query("SELECT `id` FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."payouts` WHERE `timestamp` > NOW() - INTERVAL ".$interval.$user_check);
 								if ($row = @$result->fetch_assoc())
@@ -134,7 +159,7 @@ class simple_faucet
 									$promo_code = "";
 									if ($this->config["use_promo_codes"] && isset($_POST["promo_code"])) // check for valid promo code
 										{
-										$result2 = $this->db->query("SELECT `minimum_payout`,`maximum_payout`,`uses` FROM `".$this->config["mysql_table_prefix"]."promo_codes` WHERE `code` = '".$this->db->escape_string($_POST["promo_code"])."'"); 
+										$result2 = $this->db->query("SELECT `minimum_payout`,`maximum_payout`,`uses` FROM `".$this->config["mysql_table_prefix"]."promo_codes` WHERE `code` = '".$this->db->escape_string($_POST["promo_code"])."'");
 										if ($promo = @$result2->fetch_assoc())
 											{
 											$promo["uses"] = intval($promo["uses"]); // MySQLi
@@ -147,15 +172,18 @@ class simple_faucet
 													$this->promo_payout_amount = $promo["maximum_payout"];
 												else
 													$this->promo_payout_amount = $this->float_rand($promo["minimum_payout"],$promo["maximum_payout"]);
-													//$this->promo_payout_amount = mt_rand($promo["minimum_payout"]*10000,$promo["maximum_payout"]*10000)/10000; // calculate a random promo DOGE amount
+													//$this->promo_payout_amount = mt_rand($promo["minimum_payout"]*10000,$promo["maximum_payout"]*10000)/10000; // calculate a random promo CHAIN amount
 												if ($promo["uses"] > 0)
 													$this->db->query("UPDATE `".$this->config["mysql_table_prefix"]."promo_codes` SET `uses` = `uses`-1 WHERE `code` = '".$this->db->escape_string($promo_code)."'");
 												}
 											}
 										}
-									//$this->payout_amount = mt_rand($this->config["minimum_payout"]*10000,$this->config["maximum_payout"]*10000)/10000; // calculate a random DOGE amount
-									$this->payout_amount = $this->float_rand($this->config["minimum_payout"],$this->config["maximum_payout"]);
-									$this->db->query("INSERT INTO `".$this->db->escape_string($this->config["mysql_table_prefix"])."payouts` (`payout_amount`,`ip_address`,`payout_address`,`promo_code`,`promo_payout_amount`,`timestamp`) VALUES ('".$this->payout_amount."','".$this->db->escape_string($_SERVER["REMOTE_ADDR"])."','".$this->db->escape_string($dogecoin_address)."','".$this->db->escape_string($promo_code)."','".$this->promo_payout_amount."',NOW())"); // insert the transaction into the payout log
+									//$this->payout_amount = mt_rand($this->config["minimum_payout"]*10000,$this->config["maximum_payout"]*10000)/10000; // calculate a random CHAIN amount
+
+									//$this->payout_amount = number_format($this->float_rand($this->config["minimum_payout"],$this->config["maximum_payout"]) / $this->usd_value), 8);
+									$this->payout_amount = $this->config["maximum_payout"] / $this->usd_value;
+
+									$this->db->query("INSERT INTO `".$this->db->escape_string($this->config["mysql_table_prefix"])."payouts` (`payout_amount`,`ip_address`,`payout_address`,`promo_code`,`promo_payout_amount`,`timestamp`) VALUES ('".$this->payout_amount."','".$this->db->escape_string($_SERVER["REMOTE_ADDR"])."','".$this->db->escape_string($chaincoin_address)."','".$this->db->escape_string($promo_code)."','".$this->promo_payout_amount."',NOW())"); // insert the transaction into the payout log
 
 									if ($this->config["wallet_passphrase"] != "")
 										$this->rpc("walletpassphrase",array($this->config["wallet_passphrase"],5)); // unlock wallet
@@ -165,21 +193,21 @@ class simple_faucet
 									else
 										{
 										if ($this->config["stage_payments"])
-											$this->status = $this->stage_payment($dogecoin_address,($this->payout_amount+$this->promo_payout_amount)) ? $this->promo_payout_amount>0 ? SF_STATUS_PAYOUT_AND_PROMO_ACCEPTED : SF_STATUS_PAYOUT_ACCEPTED : SF_STATUS_PAYOUT_ERROR; // stage the DOGE;
+											$this->status = $this->stage_payment($chaincoin_address,($this->payout_amount+$this->promo_payout_amount)) ? $this->promo_payout_amount>0 ? SF_STATUS_PAYOUT_AND_PROMO_ACCEPTED : SF_STATUS_PAYOUT_ACCEPTED : SF_STATUS_PAYOUT_ERROR; // stage the CHAIN;
 										else
-											$this->status = !is_null($this->rpc("sendtoaddress",array($dogecoin_address, ($this->payout_amount+$this->promo_payout_amount) ))) ? $this->promo_payout_amount>0 ? SF_STATUS_PAYOUT_AND_PROMO_ACCEPTED : SF_STATUS_PAYOUT_ACCEPTED : SF_STATUS_PAYOUT_ERROR; // send the DOGE
+											$this->status = !is_null($this->rpc("sendtoaddress",array($chaincoin_address, ($this->payout_amount+$this->promo_payout_amount) ))) ? $this->promo_payout_amount>0 ? SF_STATUS_PAYOUT_AND_PROMO_ACCEPTED : SF_STATUS_PAYOUT_ACCEPTED : SF_STATUS_PAYOUT_ERROR; // send the CHAIN
 										}
-									
+
 									if ($this->config["wallet_passphrase"] != "")
 										$this->rpc("walletlock"); // lock wallet
 									}
 								}
 							else
-								$this->status = SF_STATUS_INVALID_DOGE_ADDRESS;
+								$this->status = SF_STATUS_INVALID_CHAIN_ADDRESS;
 							}
 						else
 							{
-							if (isset($_POST["dogecoin_address"]))
+							if (isset($_POST["chaincoin_address"]))
 								$this->status = SF_STATUS_CAPTCHA_INCORRECT;
 							}
 						}
@@ -208,7 +236,7 @@ class simple_faucet
 		ob_start();
 		include("./templates/".$this->config["template"].".template.php");
 		$template = ob_get_clean();
-		
+
 		$self = $this;
 		$db = $this->db;
 		$header = $this->header;
@@ -218,8 +246,12 @@ class simple_faucet
 		$payout_amount = $this->payout_amount;
 		$payout_address = $this->payout_address;
 		$promo_payout_amount = $this->promo_payout_amount;
+		$usd_value = $this->usd_value;
+		$btc_value = $this->btc_value;
+		$operator_address = $this->operator_address;
+		$operator_fee = $this->operator_fee;
 
-		$template = preg_replace_callback("/\{\{([a-zA-Z-0-9\ \_]+?)\}\}/",function($match) use ($self,$db,$header,$status,$config,$balance,$payout_amount,$payout_address,$promo_payout_amount)
+		$template = preg_replace_callback("/\{\{([a-zA-Z-0-9\ \_]+?)\}\}/",function($match) use ($self,$db,$header,$status,$config,$balance,$payout_amount,$payout_address,$promo_payout_amount,$sum_staged_payments,$usd_value,$btc_value,$operator_address,$operator_fee)
 			{
 			switch (strtolower($match[1]))
 				{
@@ -228,25 +260,27 @@ class simple_faucet
 				case "maximum_payout":
 				case "payout_threshold":
 				case "donation_address":
+				case "operator_address":
+				case "operator_fee":
 				case "title":
 					return isset($config[strtolower($match[1])]) ? $config[strtolower($match[1])] : $match[1];
-                
+
                 case "head":
                 	return $header;
-                                
+
                 case "coinname":
 	               return $config["coinname"];
-                
+
 				case "balance":
 					return $balance;
-				
+
 				// statistics:
 				case "average_payout":
 					return $self->payout_aggregate("AVG");
 
 				case "total_payout":
 				case "total_payouts":
-					return $self->payout_aggregate("SUM");
+					return number_format($self->payout_aggregate("SUM"),8);
 
 				case "smallest_payout":
 					return $self->payout_aggregate("MIN");
@@ -256,6 +290,17 @@ class simple_faucet
 
 				case "number_of_payouts":
 					return $self->payout_aggregate("COUNT");
+
+				case "sum_staged_payments":
+					if ($status != SF_STATUS_MYSQL_CONNECTION_FAILED)
+						{
+						if ($result = $db->query("SELECT SUM(`payout_amount`) FROM `".$db->escape_string($config["mysql_table_prefix"])."staged_payments`"))
+							{
+							$row = $result->fetch_array(MYSQLI_NUM);
+							return number_format($row[0],8);
+							}
+						}
+					return 0;
 
 				// staged payment info:
 				case "staged_payment_count":
@@ -285,7 +330,7 @@ class simple_faucet
 
 				// current user information:
 				case "payout_amount":
-					return $payout_amount;
+					return number_format($payout_amount,8);
 
 				case "payout_address":
 					return $payout_address;
@@ -294,7 +339,14 @@ class simple_faucet
 					return $promo_payout_amount;
 
 				case "total_promo_payouts":
-					return $self->payout_aggregate("PROMO");
+					return number_format($self->payout_aggregate("PROMO"),8);
+
+				case "usd_value":
+					return $usd_value;
+
+				case "btc_value":
+					return $btc_value;
+
 
 				// CAPTCHA:
 
@@ -366,7 +418,7 @@ class simple_faucet
 			}
 		else
 			return recaptcha_check_answer($this->config["captcha_config"]["private_key"],@$_POST["g-recaptcha-response"],$this->config["captcha_https"]);
-		return false;		
+		return false;
 		}
 
 	protected function stage_payment($address,$amount)
@@ -392,6 +444,8 @@ class simple_faucet
 		{
 		if ($this->status != SF_STATUS_MYSQL_CONNECTION_FAILED)
 			{
+
+
 			if ($result = $this->db->query("SELECT * FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."staged_payments`"))
 				{
 				$stage = array();
@@ -401,12 +455,18 @@ class simple_faucet
 					$ids[] = $row["id"];
 					$stage[$row["payout_address"]] = !isset($stage[$row["payout_address"]]) ? floatval($row["payout_amount"]) : $stage[$row["payout_address"]] + floatval($row["payout_amount"]);
 					}
-				$this->db->query("DELETE FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."staged_payments` WHERE `id` = '".implode("' OR `id` = '",$ids)."'"); // delete the stage payments that are about to be executed
+
+				//add operator fee
+				$stage[$this->config["operator_address"]] = floatval(array_sum($stage) * ($this->config["operator_fee"] / 100));
 
 				if ($this->config["wallet_passphrase"] != "")
 					$this->rpc("walletpassphrase",array($this->config["wallet_passphrase"],5)); // unlock wallet
 
-				$this->rpc("sendmany",array($this->config["stage_payment_account_name"],$stage)); // check null?
+				if ($this->rpc("sendmany",array($this->config["stage_payment_account_name"],$stage))) // check null?
+				{
+					$this->db->query("DELETE FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."staged_payments` WHERE `id` = '".implode("' OR `id` = '",$ids)."'"); // delete the stage payments that are about to be executed
+				}
+
 
 				if ($this->config["wallet_passphrase"] != "")
 					$this->rpc("walletlock"); // lock wallet
