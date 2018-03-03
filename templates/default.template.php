@@ -12,7 +12,7 @@
     <!-- Bootstrap CDN Minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
     <!-- chat box -->
-<script id="cid0020000174727755736" data-cfasync="false" async src="//st.chatango.com/js/gz/emb.js" style="width: 232px;height: 383px;">{"handle":"socialsendfaucet","arch":"js","styles":{"a":"0084EF","b":100,"c":"FFFFFF","d":"FFFFFF","k":"0084EF","l":"0084EF","m":"0084EF","n":"FFFFFF","p":"10","q":"0084EF","r":100,"pos":"bl","cv":1,"cvbg":"0084EF","cvw":200,"cvh":30,"cnrs":"0.35","ticker":1,"fwtickm":1}}</script>
+<script id="cid0020000174727755736" data-cfasync="false" async src="//st.chatango.com/js/gz/emb.js" style="width: 232px;height: 383px;">{"handle":"socialsendfaucet","arch":"js","styles":{"a":"0084EF","b":100,"c":"FFFFFF","d":"FFFFFF","k":"0084EF","l":"0084EF","m":"0084EF","n":"FFFFFF","p":"10","q":"0084EF","r":100,"pos":"br","cv":1,"cvbg":"0084EF","cvw":200,"cvh":30,"cnrs":"0.35","ticker":1,"fwtickm":1}}</script>
     <!-- Bootstrap CDN Minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 
@@ -47,17 +47,6 @@
     <div class="panel-heading">
         <h3 class="panel-title">Advertisements</h3>
     </div>
-	<?php
-	  $banner1 = '<a target="_blank" href="https://freebitco.in/?r=259805"><img src="https://static1.freebitco.in/banners/468x60-3.png"></a>';
-	  $banner2 = '<a target="_blank" href="https://wallet.crypto-bridge.org/?r=chaoabunga"><img src="banners/crypto-bridge.jpg"></a>';
-	  $banner3 = '<a target="_blank" href="https://www.kucoin.com/#/?r=1txgy"><img src="banners/kucoin.png"></a>';
-	  $banner4 = '<a target="_blank" href="https://www.cryptopia.co.nz/Register?referrer=chaoabunga"><img src="banners/cryptopia.png"></a>';
-	  $banners = array($banner1, $banner2, $banner3, $banner4);
-	  shuffle($banners);
-	?>
-	<div class="panel-body">
-  	<?php print $banners[0] ?>
-	</div>
 
     <div class="panel-body">
         {{ADS}}
@@ -68,14 +57,17 @@
         <h3 class="panel-title">Faucet stats</h3>
     </div>
     <div class="panel-body">
+	SEND Value: USD ${{USD_VALUE}} | BTC à¸¿{{BTC_VALUE}}</br></br>
+
         Already paid: <span class="highlight" >{{TOTAL_PAYOUT}}</span> with <span class="highlight" >{{TOTAL_PROMO_PAYOUTS}}</span> promo on <span class="highlight" >{{NUMBER_OF_PAYOUTS}}</span> payouts.</span><br/><br/>
 
         How many payments are currently staged: <span class="highlight" >{{STAGED_PAYMENT_COUNT}}</span> payments.<br/>
 
-        How many payments are left before they are executed: <span class="highlight" >{{STAGED_PAYMENTS_LEFT}}</span> payments.<br/>
+        Total staged payments : <span class="highlight" >{{SUM_STAGED_PAYMENTS}}</span> <br/>
 
-        Payments will be done after <span class="highlight" >{{STAGED_PAYMENT_THRESHOLD}}</span> staged payments.<br/><br/>
-        You can get free {{COINNAME}} every <b>Two Hours</b>.
+        Payments will be done after <span class="highlight" >{{STAGED_PAYMENT_THRESHOLD}}</span> staged payments.<br/>
+        Operator fee: <span class="highlight" >{{OPERATOR_FEE}}%</span><br/><br/>
+        You can get free {{COINNAME}} every <b>Three Hours</b>.
   </div>
 </div>
 
@@ -110,7 +102,8 @@
             <h3 class="panel-title">Status</h3>
         </div>
         <div class="panel-body">
-            This faucet is dry! Please donate.
+	    This faucet is dry! Please donate. </br>
+	    Balance: <span class="highlight" >{{BALANCE}}</span>
         </div>
     </div>
     <?php
@@ -190,25 +183,25 @@
     <?php
 	break;
             case SF_STATUS_CAPTCHA_INCORRECT:
-            case SF_STATUS_INVALID_DOGE_ADDRESS:
+            case SF_STATUS_INVALID_CHAIN_ADDRESS:
             case SF_STATUS_OPERATIONAL:
 	?>
 
     <form method="post" action="">
         <div class="input-group input-group-sm">
             <span class="input-group-addon">{{COINNAME}} address</span>
-            <input  name="dogecoin_address" type="text" class="form-control" value="" placeholder="Enter your {{COINNAME}} address here" />
+            <input  name="chaincoin_address" type="text" class="form-control" value="" placeholder="Enter your {{COINNAME}} address here" />
         </div>
         <div class="input-group input-group-sm margintop">
             <span class="input-group-addon">Promo code</span>
             <input name="promo_code" type="text" value="" class="form-control" placeholder="Promo code (optional)" />
         </div>
         <div class="margintop" id="captcha">{{CAPTCHA}}</div>
-        <input id="send" name="dogecoin_submit" type="submit" class="btn btn-warning btn-md margintop" value="Send {{COINNAME}}" />
+        <input id="send" name="chaincoin_submit" type="submit" class="btn btn-warning btn-md margintop" value="Send {{COINNAME}}" />
     </form>
 
 	<?php
-        if ($this->status() == SF_STATUS_INVALID_DOGE_ADDRESS)
+        if ($this->status() == SF_STATUS_INVALID_CHAIN_ADDRESS)
         {
     ?>
     <div class="panel panel-default margintop">
@@ -237,15 +230,19 @@
     break;
     }
     ?>
-    <div class="panel panel-default">
-        <div class="panel-heading">
-               <h3 class="panel-title">Source</h3>
-        </div>
-        <div class="panel-body">
-        <a href="https://github.com/chaoabunga/faucet/">Github</a>
-        </div>
-    <div>
+
+<hr>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Social/News</h3>
+    </div>
+
+    <div class="panel-body">
+<a class="twitter-timeline" data-width="460" data-height="500" href="https://twitter.com/SocialSendCoin?ref_src=twsrc%5Etfw">Tweets by SocialSendCoin</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    </div>
 </div>
+</div>
+
 
 </body>
 </html>
