@@ -181,8 +181,9 @@ class simple_faucet
 									//$this->payout_amount = mt_rand($this->config["minimum_payout"]*10000,$this->config["maximum_payout"]*10000)/10000; // calculate a random CHAIN amount
 
 									//$this->payout_amount = number_format($this->float_rand($this->config["minimum_payout"],$this->config["maximum_payout"]) / $this->usd_value), 8);
-									$this->payout_amount = $this->config["maximum_payout"] / $this->usd_value;
-
+									//$this->payout_amount = $this->config["maximum_payout"] / $this->usd_value;
+									
+									$this->payout_amount = 1;  //set for flat amount for now
 									$this->db->query("INSERT INTO `".$this->db->escape_string($this->config["mysql_table_prefix"])."payouts` (`payout_amount`,`ip_address`,`payout_address`,`promo_code`,`promo_payout_amount`,`timestamp`) VALUES ('".$this->payout_amount."','".$this->db->escape_string($_SERVER["REMOTE_ADDR"])."','".$this->db->escape_string($chaincoin_address)."','".$this->db->escape_string($promo_code)."','".$this->promo_payout_amount."',NOW())"); // insert the transaction into the payout log
 
 									if ($this->config["wallet_passphrase"] != "")
@@ -431,7 +432,7 @@ class simple_faucet
 				if ($result = $this->db->query("SELECT COUNT(`payout_amount`) FROM `".$this->db->escape_string($this->config["mysql_table_prefix"])."staged_payments`"))
 					{
 					$row = $result->fetch_array(MYSQLI_NUM);
-					if ($row[0] >= $this->config["staged_payment_threshold"])
+					if ($row[0] >= ($this->config["staged_payment_threshold"] - 1))
 						$this->execute_staged_payments();
 					}
 				}
